@@ -30,15 +30,17 @@ class ActorCritic(object):
         #tf.summary.FileWriter("log_t/", self.sess.graph)
         self.sess.run(tf.global_variables_initializer())
 
-    def act(self, x):
+    def act(self, x, action_=True):
         #print(type(x))
         #x = self.sess.run(x)
         norm_dist = tf.distributions.Normal(loc=self.mu, scale=self.sigma)
-        sample = tf.squeeze(norm_dist.sample(1), axis=0)
-        x = x[np.newaxis, :]
-
-        action = self.sess.run(sample, {self.n_inputs: x})[0]
-        value = self.sess.run(self.critic, {self.n_inputs: x})
+        if action_:
+            sample = tf.squeeze(norm_dist.sample(1), axis=0)
+            x = x[np.newaxis, :]
+            action = self.sess.run(sample, {self.n_inputs: x})[0]
+            value = self.sess.run(self.critic, {self.n_inputs: x})
+        else:
+            action, value = None, None
         #print(self.sess.run(norm_dist.mean()[0]), "HERE1")
         #log_prob = norm_dist.log_prob(action)
         return action, value, norm_dist

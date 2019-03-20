@@ -28,7 +28,8 @@ class ActorCritic(object):
             #self.log_std = tf.multiply(tf.ones(1, self.n_outputs) * std)
             #self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std #seperate parameter not comnnected to the layers of the N, is more efficient
         #tf.summary.FileWriter("log_t/", self.sess.graph)
-        self.sess.run(tf.global_variables_initializer())
+        #self.sess.run(tf.global_variables_initializer())
+        #tf.get_default_session()
 
     def act(self, x, action_=True):
         #print(type(x))
@@ -37,8 +38,8 @@ class ActorCritic(object):
         if action_:
             sample = tf.squeeze(norm_dist.sample(1), axis=0)
             x = x[np.newaxis, :]
-            action = self.sess.run(sample, {self.n_inputs: x})[0]
-            value = self.sess.run(self.critic, {self.n_inputs: x})
+            action = tf.get_default_session().run(sample, {self.n_inputs: x})[0]
+            value = tf.get_default_session().run(self.critic, {self.n_inputs: x})
         else:
             action, value = None, None
         #print(self.sess.run(norm_dist.mean()[0]), "HERE1")

@@ -20,9 +20,9 @@ GAE_LAMBDA          = 0.95
 PPO_EPSILON         = 0.2
 CRITIC_DISCOUNT     = 0.5
 ENTROPY_BETA        = 0.001
-PPO_STEPS           = 10 # number of transitions we sample for each training iteration, each step collects a transitoins from each parallel env, hence total amount of data collected = N_envs * PPOsteps = buffer of 2048 data samples to train on
-MINI_BATCH_SIZE     = 5 # num of samples that are randomly  selected from the total amount of stored data
-PPO_EPOCHS          = 256 #
+PPO_STEPS           = 20 # number of transitions we sample for each training iteration, each step collects a transitoins from each parallel env, hence total amount of data collected = N_envs * PPOsteps = buffer of 2048 data samples to train on
+MINI_BATCH_SIZE     = 64# num of samples that are randomly  selected from the total amount of stored data
+PPO_EPOCHS          = 10 #
 '''one epoch means one PPO-epochs -- one epochd means one pass over the entire buffer of training data.
 So if one buffer has 2048 transitions and mini-batch-size is 64, then one epoch would be 32 selected mini batches.
 '''
@@ -151,15 +151,15 @@ if __name__ == "__main__":
     state = env.reset() # 8 actions, 8 reward,s 8 dones
     early_stop = False
 
-    init = tf.global_variables_initializer()
+    #init = tf.global_variables_initializer()
     with tf.Session() as sess:
-        sess.run(init)
+        sess.run(tf.global_variables_initializer())
         while not early_stop:
 
             log_probs, values, states, actions, rewards, masks = [], [], [], [], [], []
 
             for q in range(PPO_STEPS): #each ppo steps generates actions, states, rewards
-
+                #print("PPO_steps:{}".format(q))
                 action, value, norm_dist = model.act(state)
                 next_state, reward, done, _ = env.step(action)
                 if render:
@@ -178,7 +178,6 @@ if __name__ == "__main__":
             _, next_value, _ = model.act(next_state)
             next_value = next_value[0][0]
             returns = compute_gae(next_value, rewards, masks, values)
-
             returns  = tf.concat(returns,0)
             values = tf.transpose(tf.concat(values,1))
             states = tf.transpose(tf.stack(states,1))
@@ -195,6 +194,8 @@ if __name__ == "__main__":
             advantage = returns - values
             advantage = normalize(advantage)
             ppo_update(frame_idx, states, actions, log_probs, returns, advantage)
+            train_epoch += 1
+            print(train_epoch)
 
             if train_epoch % TEST_EPOCHS == 0:
                 test_reward = np.mean([test_env(env, model) for _ in range(NUM_TESTS)])

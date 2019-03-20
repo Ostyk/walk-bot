@@ -35,8 +35,8 @@ class ActorCritic(object):
 
     def act(self, x, action_=True):
 
-        s = time.time()
         norm_dist = tf.distributions.Normal(loc=self.mu, scale=self.log_std)
+
         if action_:
             sample = tf.squeeze(norm_dist.sample(1), axis=0)
             x = x[np.newaxis, :]

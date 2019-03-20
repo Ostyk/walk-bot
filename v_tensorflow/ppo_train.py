@@ -13,7 +13,7 @@ import tensorflow as tf
 NUM_ENVS            = 1
 ENV_ID              = "Humanoid-v2"
 #ENV_ID = "RoboschoolHumanoid-v1"
-HIDDEN_SIZE         = 64
+HIDDEN_SIZE         = 128
 LEARNING_RATE       = 1e-4
 GAMMA               = 0.99
 GAE_LAMBDA          = 0.95
@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
     model = ActorCritic(n_inputs, n_outputs, HIDDEN_SIZE)
 
-    print("model:\n{}".format(model))
+    #print("model:\n{}".format(model))
     optimizer = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE)#, epsilon=PPO_EPSILON)
 
     frame_idx  = 0
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
     #init = tf.global_variables_initializer()
     with tf.Session() as sess:
-        #writer = tf.summary.FileWriter('./log/train', sess.graph)
+        writer = tf.summary.FileWriter('./log/train', sess.graph)
         sess.run(tf.global_variables_initializer())
 
         while not early_stop:
@@ -152,7 +152,7 @@ if __name__ == "__main__":
             log_probs, values, states, actions, rewards, masks = [], [], [], [], [], []
 
             for q in range(PPO_STEPS): #each ppo steps generates actions, states, rewards
-                #print("PPO_steps:{}".format(q))
+                print("PPO_steps:{}".format(q))
                 action, value, norm_dist = model.act(state)
                 next_state, reward, done, _ = env.step(action)
                 if render:
@@ -168,10 +168,13 @@ if __name__ == "__main__":
 
                 state = next_state
                 frame_idx += 1
-
+            s = time.time()
             _, next_value, _ = model.act(next_state)
+
+            print("1: ",time.time()-s)
             next_value = next_value[0][0]
             returns = compute_gae(next_value, rewards, masks, values)
+            print("2: ",time.time()-s)
             returns  = tf.concat(returns,0)
             values = tf.transpose(tf.concat(values,1))
             states = tf.transpose(tf.stack(states,1))
@@ -180,6 +183,8 @@ if __name__ == "__main__":
 
             advantage = returns - values
             advantage = normalize(advantage)
+            e = time.time()
+            print("time to convert:\t{}".format(s-e))
             ppo_update(frame_idx, states, actions, log_probs, returns, advantage)
             train_epoch += 1
             print("training epoch: ",train_epoch)

@@ -20,14 +20,14 @@ GAE_LAMBDA          = 0.95
 PPO_EPSILON         = 0.2
 CRITIC_DISCOUNT     = 0.5
 ENTROPY_BETA        = 0.001
-PPO_STEPS           = 2#56 # number of transitions we sample for each training iteration, each step collects a transitoins from each parallel env, hence total amount of data collected = N_envs * PPOsteps = buffer of 2048 data samples to train on
+PPO_STEPS           = 2 # number of transitions we sample for each training iteration, each step collects a transitoins from each parallel env, hence total amount of data collected = N_envs * PPOsteps = buffer of 2048 data samples to train on
 MINI_BATCH_SIZE     = 2 # num of samples that are randomly  selected from the total amount of stored data
 PPO_EPOCHS          = 10 #
 '''one epoch means one PPO-epochs -- one epochd means one pass over the entire buffer of training data.
 So if one buffer has 2048 transitions and mini-batch-size is 64, then one epoch would be 32 selected mini batches.
 '''
 TEST_EPOCHS         = 10 # how often we run tests to eval our network, one epoch is one entire ppo update cycle
-NUM_TESTS           = 10 #num of tests we run to average the total rewards, each time we want eval the performance of the network
+NUM_TESTS           = 2#10 #num of tests we run to average the total rewards, each time we want eval the performance of the network
 TARGET_REWARD       = 1000
 
 def mkdir(base, name):
@@ -35,6 +35,22 @@ def mkdir(base, name):
     if not os.path.exists(path):
         os.makedirs(path)
     return path
+
+def test_env(env, model, deterministic=False):
+    state = env.reset()
+    print("SUP")
+    done = False
+    total_reward = 0
+    while not done:
+
+        action, _, norm_dist = model.act(state)
+        action = norm_dist.mean()[0] if deterministic \
+            else action
+        next_state, reward, done, _ = env.step(action)
+        state = next_state
+        total_reward += reward
+    return total_reward
+
 def compute_gae(next_value, rewards, masks, values, gamma=GAMMA, lam=GAE_LAMBDA):
     values = values + [next_value]
     gae = 0
@@ -88,7 +104,6 @@ def ppo_update(frame_idx, states, actions, log_probs, returns, advantages, clip_
                 tf.clip_by_value(ratio, 1.-clip_param, 1.+clip_param)*advantage))
 
             critic_loss = tf.reduce_mean(tf.square(tf.subtract(return_, value)))
-            print("made it")
             loss = CRITIC_DISCOUNT * critic_loss + actor_loss - ENTROPY_BETA * entropy
             optimizer.minimize(loss)
             #optimizer.zero_grad()
@@ -136,17 +151,17 @@ if __name__ == "__main__":
 
     state = env.reset() # 8 actions, 8 reward,s 8 dones
     early_stop = False
-    #state = tf.convert_to_tensor(state)
+
+    init = tf.global_variables_initializer()
     with tf.Session() as sess:
+        sess.run(init)
         while not early_stop:
 
             log_probs, values, states, actions, rewards, masks = [], [], [], [], [], []
 
             for q in range(PPO_STEPS): #each ppo steps generates actions, states, rewards
-                #state = tf.dtypes.cast(state, tf.float32)
-                #print(state)
+
                 action, value, norm_dist = model.act(state)
-                #print(q)
                 next_state, reward, done, _ = env.step(action)
                 if render:
                     env.render()
@@ -185,3 +200,20 @@ if __name__ == "__main__":
             advantage = returns - values
             advantage = normalize(advantage)
             ppo_update(frame_idx, states, actions, log_probs, returns, advantage)
+
+            if train_epoch % TEST_EPOCHS == 0:
+                print("OKAY my man")
+                test_reward = np.mean([test_env(env, model) for _ in range(NUM_TESTS)])
+                print("OKAY my man here")
+                #writer.add_scalar("test_rewards", test_reward, frame_idx)
+                print('Frame %s. reward: %s' % (frame_idx, test_reward))
+                # Save a checkpoint every time we achieve a best reward
+                if best_reward is None or best_reward < test_reward:
+                    if best_reward is not None:
+                        print("Best reward updated: %.3f -> %.3f" % (best_reward, test_reward))
+                        name = "%s_best_%+.3f_%d.dat" % (args.name, test_reward, frame_idx)
+                        fname = os.path.join('.', 'checkpoints', name)
+                        print(fname)
+                        torch.save(model, fname)
+                    best_reward = test_reward
+                if test_reward > TARGET_REWARD: early_stop = True

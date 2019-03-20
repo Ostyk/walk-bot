@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
+import time
 
 
 class ActorCritic(object):
@@ -23,18 +24,19 @@ class ActorCritic(object):
             with tf.variable_scope('actor'): #Policu_net
                 layer1 = tf.layers.dense(self.n_inputs, self.hidden_size, tf.nn.relu, trainable=True, name='layer1-actor')
                 self.actor = tf.layers.dense(layer_1, self.hidden_size, name = 'A_layer')
-                self.mu = 0.4 * tf.layers.dense(layer1, n_outputs, tf.nn.tanh, trainable=True, name = 'mu_')
-                self.sigma = tf.layers.dense(layer1, n_outputs, tf.nn.softplus, trainable=True,name ='sigma_' )
-            #self.log_std = tf.multiply(tf.ones(1, self.n_outputs) * std)
+                self.mu = tf.layers.dense(layer1, n_outputs, tf.nn.tanh, trainable=True, name = 'mu_')
+                #self.sigma = tf.layers.dense(layer1, n_outputs, tf.nn.softplus, trainable=True,name ='sigma_' )
+            self.log_std = tf.ones((1,n_outputs)) * std
+
             #self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std #seperate parameter not comnnected to the layers of the N, is more efficient
         #tf.summary.FileWriter("log_t/", self.sess.graph)
         #self.sess.run(tf.global_variables_initializer())
         #tf.get_default_session()
 
     def act(self, x, action_=True):
-        #print(type(x))
-        #x = self.sess.run(x)
-        norm_dist = tf.distributions.Normal(loc=self.mu, scale=self.sigma)
+
+        s = time.time()
+        norm_dist = tf.distributions.Normal(loc=self.mu, scale=self.log_std)
         if action_:
             sample = tf.squeeze(norm_dist.sample(1), axis=0)
             x = x[np.newaxis, :]
@@ -42,6 +44,5 @@ class ActorCritic(object):
             value = tf.get_default_session().run(self.critic, {self.n_inputs: x})
         else:
             action, value = None, None
-        #print(self.sess.run(norm_dist.mean()[0]), "HERE1")
-        #log_prob = norm_dist.log_prob(action)
+
         return action, value, norm_dist

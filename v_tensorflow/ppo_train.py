@@ -4,6 +4,7 @@ import os
 import random
 import gym
 import numpy as np
+import time
 
 from model import ActorCritic
 import tensorflow as tf
@@ -12,7 +13,6 @@ import tensorflow as tf
 NUM_ENVS            = 1
 ENV_ID              = "Humanoid-v2"
 #ENV_ID = "RoboschoolHumanoid-v1"
-
 HIDDEN_SIZE         = 64
 LEARNING_RATE       = 1e-4
 GAMMA               = 0.99
@@ -20,15 +20,15 @@ GAE_LAMBDA          = 0.95
 PPO_EPSILON         = 0.2
 CRITIC_DISCOUNT     = 0.5
 ENTROPY_BETA        = 0.001
-PPO_STEPS           = 20 # number of transitions we sample for each training iteration, each step collects a transitoins from each parallel env, hence total amount of data collected = N_envs * PPOsteps = buffer of 2048 data samples to train on
-MINI_BATCH_SIZE     = 64# num of samples that are randomly  selected from the total amount of stored data
+PPO_STEPS           = 256 # number of transitions we sample for each training iteration, each step collects a transitoins from each parallel env, hence total amount of data collected = N_envs * PPOsteps = buffer of 2048 data samples to train on
+MINI_BATCH_SIZE     = 64 # num of samples that are randomly  selected from the total amount of stored data
 PPO_EPOCHS          = 10 #
 '''one epoch means one PPO-epochs -- one epochd means one pass over the entire buffer of training data.
 So if one buffer has 2048 transitions and mini-batch-size is 64, then one epoch would be 32 selected mini batches.
 '''
 TEST_EPOCHS         = 10 # how often we run tests to eval our network, one epoch is one entire ppo update cycle
-NUM_TESTS           = 1 #num of tests we run to average the total rewards, each time we want eval the performance of the network
-TARGET_REWARD       = 400
+NUM_TESTS           = 10 #num of tests we run to average the total rewards, each time we want eval the performance of the network
+TARGET_REWARD       = 1000
 
 def mkdir(base, name):
     path = os.path.join(base, name)
@@ -45,6 +45,7 @@ def test_env(env, model, deterministic=False):
         action, _, norm_dist = model.act(state)
         action = norm_dist.mean()[0] if deterministic \
             else action
+
         next_state, reward, done, _ = env.step(action)
         state = next_state
         total_reward += reward
@@ -68,20 +69,12 @@ def normalize(x):
 
 def ppo_iter(states, actions, log_probs, returns, advantage):
     batch_size = int(states.get_shape()[0])
-    # print(batch_size)
-    # print("returns shape:{}\ttype:{}".format(returns.shape, type(returns)))
-    # print("values shape:{}\ttype:{}".format(values.shape,type(values)))
-    # print("log_probs shape:{}\ttype:{}".format(log_probs.shape,type(log_probs)))
-    # print("actions shape:{}\ttype:{}".format(actions.shape,type(actions)))
-    # print("states shape:{}\ttype:{}".format(states.shape,type(states)))
-    # #print(batch_size//MINI_BATCH_SIZE)
-    # # generates random mini-batches until we have covered the full batch
-
+    slice = lambda x,y: tf.nn.embedding_lookup(x,y)
     for _ in range(batch_size // MINI_BATCH_SIZE):
-       rand_ids = tf.constant(np.random.randint(0, batch_size, MINI_BATCH_SIZE))
-       yield tf.nn.embedding_lookup(states,rand_ids), tf.nn.embedding_lookup(actions,rand_ids), \
-             tf.nn.embedding_lookup(log_probs,rand_ids), tf.nn.embedding_lookup(returns,rand_ids), \
-             tf.nn.embedding_lookup(advantage,rand_ids)
+       r_idx = tf.constant(np.random.randint(0, batch_size, MINI_BATCH_SIZE))
+       yield slice(states,r_idx), slice(actions,r_idx), slice(log_probs,r_idx), \
+             slice(returns,r_idx), slice(advantage,r_idx)
+
 def ppo_update(frame_idx, states, actions, log_probs, returns, advantages, clip_param=PPO_EPSILON):
 
     count_steps, sum_returns, sum_advantage, sum_loss_actor =  0, 0.0, 0.0, 0.0
@@ -105,12 +98,8 @@ def ppo_update(frame_idx, states, actions, log_probs, returns, advantages, clip_
             critic_loss = tf.reduce_mean(tf.square(tf.subtract(return_, value)))
             loss = CRITIC_DISCOUNT * critic_loss + actor_loss - ENTROPY_BETA * entropy
             optimizer.minimize(loss)
-            #optimizer.zero_grad()
-            #loss.backward()
-            #optimizer.step()
-            return_ = return_[0]
             # track statistics
-            sum_returns += tf.reduce_mean(return_)
+            sum_returns += tf.reduce_mean(return_[0])
             sum_advantage += tf.reduce_mean(advantage)
             sum_loss_actor += actor_loss
             sum_loss_critic += critic_loss
@@ -133,6 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--name", default=ENV_ID, help="Name of the run")
     args = parser.parse_args()
     #writer = SummaryWriter(comment="ppo_" + args.name)
+
     render = False
     env = gym.make('Humanoid-v2')
     env.seed(42)
@@ -141,8 +131,9 @@ if __name__ == "__main__":
     n_outputs = size(env.action_space)
 
     model = ActorCritic(n_inputs, n_outputs, HIDDEN_SIZE)
+
     print("model:\n{}".format(model))
-    optimizer = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE, epsilon=PPO_EPSILON)
+    optimizer = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE)#, epsilon=PPO_EPSILON)
 
     frame_idx  = 0
     train_epoch = 0 #one complte update cycle
@@ -153,7 +144,9 @@ if __name__ == "__main__":
 
     #init = tf.global_variables_initializer()
     with tf.Session() as sess:
+        #writer = tf.summary.FileWriter('./log/train', sess.graph)
         sess.run(tf.global_variables_initializer())
+
         while not early_stop:
 
             log_probs, values, states, actions, rewards, masks = [], [], [], [], [], []
@@ -165,6 +158,7 @@ if __name__ == "__main__":
                 if render:
                     env.render()
                 log_prob_ = norm_dist.log_prob(action)
+
                 log_probs.append(log_prob_)
                 values.append(value)
                 states.append(state)
@@ -183,19 +177,12 @@ if __name__ == "__main__":
             states = tf.transpose(tf.stack(states,1))
             log_probs  = tf.reshape(tf.concat(log_probs,0), [2,17]) #ppo_size, action_space_size
             actions = tf.transpose(tf.stack(actions,1))
-            #print("returns shape:", returns.shape
-            #print("values shape:", values.shape)
-            #print("log_probs shape:", log_probs.shape)
-            #print("actions shape:", actions.shape)
-            #print("states shape:", states.shape)
-
-
 
             advantage = returns - values
             advantage = normalize(advantage)
             ppo_update(frame_idx, states, actions, log_probs, returns, advantage)
             train_epoch += 1
-            print(train_epoch)
+            print("training epoch: ",train_epoch)
 
             if train_epoch % TEST_EPOCHS == 0:
                 test_reward = np.mean([test_env(env, model) for _ in range(NUM_TESTS)])

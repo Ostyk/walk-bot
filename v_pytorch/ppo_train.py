@@ -20,12 +20,12 @@ from lib.common import mkdir
 from lib.model import ActorCritic
 from lib.multiprocessing_env import SubprocVecEnv
 
-NUM_ENVS            = 1
+NUM_ENVS            = 8
 ENV_ID              = "Humanoid-v2"
 #ENV_ID = "RoboschoolHumanoid-v1"
 
 HIDDEN_SIZE         = 64
-LEARNING_RATE       = 1e-4
+LEARNING_RATE       = 1e-3
 GAMMA               = 0.99
 GAE_LAMBDA          = 0.95
 PPO_EPSILON         = 0.2
@@ -105,12 +105,10 @@ def ppo_update(frame_idx, states, actions, log_probs, returns, advantages, clip_
     for _ in range(PPO_EPOCHS):
         # grabs random mini-batches several times until we have covered all data
         for state, action, old_log_probs, return_, advantage in ppo_iter(states, actions, log_probs, returns, advantages):
-            start = time.time()
+
             dist, value = model(state)
             entropy = dist.entropy().mean()
             new_log_probs = dist.log_prob(action)
-            end = time.time()
-            print("TIME:", end-start)
 
             ratio = (new_log_probs - old_log_probs).exp()
             surr1 = ratio * advantage
@@ -184,8 +182,7 @@ if __name__ == "__main__":
         masks     = []
 
         for _ in range(PPO_STEPS): #each ppo steps generates actions, states, rewards
-            #print(model)
-            start = time.time()
+
             state = torch.FloatTensor(state).to(device)
 
             dist, value = model(state)
@@ -194,8 +191,6 @@ if __name__ == "__main__":
             # each state, reward, done is a list of results from each parallel environment
             next_state, reward, done, _ = envs.step(action.cpu().numpy()) # really a lists of state foe each env
             log_prob = dist.log_prob(action)
-            end = time.time()
-            print("TIMEppo:", end-start)
 
             log_probs.append(log_prob)
             values.append(value)
@@ -223,9 +218,7 @@ if __name__ == "__main__":
     #        print(i, type(i))
         advantage = returns - values
         advantage = normalize(advantage)
-        #print(advantage)
-        #print("THIS IS IT")
-        #print(type(states))
+
         ppo_update(frame_idx, states, actions, log_probs, returns, advantage)
         train_epoch += 1
 

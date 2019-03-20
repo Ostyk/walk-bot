@@ -168,23 +168,19 @@ if __name__ == "__main__":
 
                 state = next_state
                 frame_idx += 1
-            s = time.time()
+
             _, next_value, _ = model.act(next_state)
 
-            print("1: ",time.time()-s)
             next_value = next_value[0][0]
             returns = compute_gae(next_value, rewards, masks, values)
-            print("2: ",time.time()-s)
             returns  = tf.concat(returns,0)
             values = tf.transpose(tf.concat(values,1))
             states = tf.transpose(tf.stack(states,1))
-            log_probs  = tf.reshape(tf.concat(log_probs,0), [2,17]) #ppo_size, action_space_size
+            log_probs  = tf.reshape(tf.concat(log_probs,0), [PPO_STEPS,n_outputs]) #ppo_size, action_space_size
             actions = tf.transpose(tf.stack(actions,1))
 
             advantage = returns - values
             advantage = normalize(advantage)
-            e = time.time()
-            print("time to convert:\t{}".format(s-e))
             ppo_update(frame_idx, states, actions, log_probs, returns, advantage)
             train_epoch += 1
             print("training epoch: ",train_epoch)
@@ -199,8 +195,6 @@ if __name__ == "__main__":
                         print("Best reward updated: %.3f -> %.3f" % (best_reward, test_reward))
                         name = "%s_best_%+.3f_%d.dat" % (args.name, test_reward, frame_idx)
                         fname = os.path.join('.', 'checkpoints', name)
-                        print(fname)
-                        #torch.save(model, fname)
                         saver.save(sess, 'my-test-model')
                     best_reward = test_reward
                 if test_reward > TARGET_REWARD: early_stop = True

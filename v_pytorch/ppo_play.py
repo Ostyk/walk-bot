@@ -11,13 +11,12 @@ import time
 #ENV_ID = "RoboschoolHalfCheetah-v1"
 #ENV_ID = "Humanoid-v2"
 #ENV_ID = "RoboschoolHumanoid-v1"
-ENV_ID              = "Humanoid-v2"
-
-#ENV_ID = "RoboschoolHalfCheetah-v1"
+ENV_ID  = "Humanoid-v2"
 
 
 
-HIDDEN_SIZE = 256
+
+HIDDEN_SIZE = 128
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -52,7 +51,7 @@ if __name__ == "__main__":
             else dist.sample().cpu().numpy()[0]
         next_state, reward, done, _ = env.step(action)
         #env.render(close=False)
-        #env.render()
+        env.render()
         #time.sleep(0.1)
         state = next_state
         total_reward += reward

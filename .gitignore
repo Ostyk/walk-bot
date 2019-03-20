@@ -2,7 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+.DS_Store
+v_torch/videos/
+v_torch/runs/
+v_torch/checkpoints/
 # C extensions
 *.so
 

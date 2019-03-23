@@ -1,0 +1,10 @@
+\select@language {english}
+\contentsline {section}{\numberline {1}Introduction}{2}
+\contentsline {section}{\numberline {2}State of the Art}{2}
+\contentsline {subsection}{\numberline {2.1}Policy gradient Methods}{2}
+\contentsline {subsection}{\numberline {2.2}Clipped Surrogate Objective}{2}
+\contentsline {section}{\numberline {3}Methodology}{3}
+\contentsline {subsection}{\numberline {3.1}Approach}{3}
+\contentsline {subsection}{\numberline {3.2}Implementation}{4}
+\contentsline {section}{\numberline {4}Results}{4}
+\contentsline {section}{\numberline {5}Conclusions}{5}

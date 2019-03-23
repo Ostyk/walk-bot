@@ -8,7 +8,7 @@ v_torch/runs/
 v_torch/checkpoints/
 # C extensions
 *.so
-
+.DS_Store
 # Distribution / packaging
 .Python
 build/

@@ -2,7 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+# OS generated files #
+######################
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
 v_torch/videos/
 v_torch/runs/
 v_torch/checkpoints/

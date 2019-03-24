@@ -9,7 +9,7 @@ PPO implementation of Humanoid-v2 from Open-AI gym
 
 # Installation
 - Python 3.6.4
-- Please see [requirements.txt](requirement.txt) for necessary modules
+- Please see [requirements.txt](requirements.txt) for necessary modules
 
 # Repo code structure
 * [Report (PDF) detailing the implemenation and PPO](report/report.pdf)

@@ -8,15 +8,11 @@ import numpy as np
 import torch
 import time
 
-#ENV_ID = "RoboschoolHalfCheetah-v1"
-#ENV_ID = "Humanoid-v2"
-#ENV_ID = "RoboschoolHumanoid-v1"
+
 ENV_ID  = "Humanoid-v2"
 
 
-
-
-HIDDEN_SIZE = 128
+HIDDEN_SIZE = 64
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -32,7 +28,7 @@ if __name__ == "__main__":
 
     env = gym.make(args.env)
     if args.record:
-        env = gym.wrappers.Monitor(env, args.record, force=True)
+        env = gym.wrappers.Monitor(env, args.record, resume = True)
     print("OKAY")
     num_inputs  = env.observation_space.shape[0]
     num_outputs = env.action_space.shape[0]
@@ -40,21 +36,22 @@ if __name__ == "__main__":
     #model.load_state_dict(torch.load(args.model))
     model = torch.load(args.model)
 
-    state = env.reset()
-    done = False
-    total_steps = 0
-    total_reward = 0
-    while not done:
-        state = torch.FloatTensor(state).unsqueeze(0).to(device)
-        dist, _ = model(state)
-        action = dist.mean.detach().cpu().numpy()[0] if args.deterministic \
-            else dist.sample().cpu().numpy()[0]
-        next_state, reward, done, _ = env.step(action)
-        #env.render(close=False)
-        env.render()
-        #time.sleep(0.1)
-        state = next_state
-        total_reward += reward
-        total_steps += 1
+
+    for i in range(20):
+        state = env.reset()
+        done = False
+        total_steps = 0
+        total_reward = 0
+        while not done:
+            state = torch.FloatTensor(state).unsqueeze(0).to(device)
+            dist, _ = model(state)
+            action = dist.mean.detach().cpu().numpy()[0] if args.deterministic \
+                else dist.sample().cpu().numpy()[0]
+            next_state, reward, done, _ = env.step(action)
+            #env.render(close=False)
+            state = next_state
+            total_reward += reward
+            total_steps += 1
+
+        print("In %d steps we got %.3f reward" % (total_steps, total_reward))
     env.close()
-    print("In %d steps we got %.3f reward" % (total_steps, total_reward))

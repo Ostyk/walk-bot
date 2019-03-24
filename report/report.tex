@@ -174,7 +174,7 @@ The base structure of the code, I borrowed from demo's of the  School of AI's Mo
 
 Since I did not have access to a dedicated GPU, I trained the model 3 times for 30 minutes, without reallly changing the hyperparameters. The results seemed constant across three runs, however, the test rewards have been increasing so I took that as a positive. The key problem with training is that the humanoid enviroment a huge observation space (376) and action space (17), resulting in slower training and more network parameters.
 
-The results are show in Figure \ref{img:ppo_clipped} below.
+The results  for one of the above mentioned runs are shown in Figure \ref{img:ppo_clipped} below.
 
 \begin{figure}[H]
 \begin{center}
@@ -184,11 +184,12 @@ The results are show in Figure \ref{img:ppo_clipped} below.
 \label{img:ppo_clipped}
 \end{figure}
 
+The results depict that first of all, the test rewards go gradually up and stay that way which is positive, however, then they fluctuate around the 400 score. With more training time, approximately 5-10 hours, these would probably increase more exponentially. The returns go up, and so does the entropy which would mean that the agent is making increasingly more rational decisions with each episode.  Furthermore the overall loss is decreasing as well, but stable which also results in stabilized rewards in this training run.
+
 \section{Conclusions}
 
-Nice results, \\
-not too bad \\
-better with more training
+To conclude, the overall results for using the PPO algorithm with a Clipped Surrogate Objective Function, give very promising results. However, more training time, on a better workstation with a dedicated GPU is necessary to visualize proper learning and progress. The agent (humanoid) moves gradually by taking very little steps before falling over, which indicates caution and this is probably the result of the clipped range, which prohibits huge policy change. The video visualizing a couple of test runs, as well as the code, can be obtained at this Github repository \cite{code}.
+
 
 \begin{thebibliography}{1}
 %\bibitem{web14} Samper Zapater, J. Javier. (2014). From web 1.0 to web 4.0: the evolution of the web.
@@ -202,7 +203,11 @@ better with more training
 
 \bibitem{a} \url{https://towardsdatascience.com/proximal-policy-optimization-ppo-with-sonic-the-hedgehog-2-and-3-c9c21dbed5e}
 
-\bibitem{code} \url{https://github.com/colinskow/move37}
+\bibitem{code} \url{https://github.com/Ostyk/walk-bot}
+
+
+
+
 \end{thebibliography}
 
 \end{document}

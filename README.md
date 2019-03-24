@@ -5,7 +5,7 @@ PPO implementation of Humanoid-v2 from Open-AI gym
 
 
 # Demo
-![](gif.gif)
+![](walk-bot.gif)
 
 # Installation
 - Python 3.6.4

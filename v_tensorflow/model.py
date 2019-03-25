@@ -28,10 +28,9 @@ class ActorCritic(object):
                 #self.sigma = tf.layers.dense(layer1, n_outputs, tf.nn.softplus, trainable=True,name ='sigma_' )
             self.log_std = tf.ones((1,n_outputs)) * std
 
-            #self.log_std = nn.Parameter(torch.ones(1, num_outputs) * std #seperate parameter not comnnected to the layers of the N, is more efficient
-        #tf.summary.FileWriter("log_t/", self.sess.graph)
-        #self.sess.run(tf.global_variables_initializer())
-        #tf.get_default_session()
+        #same as AC but using from Guassian dist, and calc the log prob
+        #STD is a seperate paramter, not connected to the network
+        #but is more efficient
 
     def act(self, x, action_=True):
 

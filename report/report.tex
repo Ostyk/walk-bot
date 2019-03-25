@@ -60,7 +60,7 @@
 \section{Introduction}
 The goal of this project was to implement the Proximal Policy Optimzation Algorithm  (PPO) \cite{PPO}, and train it on the OpenAI Humanoid enviroment. The Humanoid-v2 enviroment which runs on a physics engine provided by Mujoco, has 27 degrees of freedom. 
 
-According the authors of PPO, the algorithm "perform comparably or better than state-of-the-art approaches while being much simpler to implement and tune." \cite{PPO}. Policy gradients have a convergence problem which is addressed  by the natural policy gradient (NPG) \cite{NPG}. However, NPG in practice uses a second-order derivative matrix which is hard to scale for large problems, and is computationally unfeasible. PPO on the other hand, instead of imposing a hard constraint, it  formalizes the constraint as a penalty in the "surrogate" objective function \cite{hui}. Hence, PPO may use a first-order optimizer like Gradient Descent (GD) to optimize the objective. Moreover, PPO uses multiple epochs mini-batch updates  instead of performing only one gradient update per data sample like PG methods. Another method which PPO outperforms is the Trust Region Policy Objective, which is very efficient but much more complicated and and not compatible with certain architectures.
+According the authors of PPO, the algorithm "performs comparably or better than state-of-the-art approaches while being much simpler to implement and tune." \cite{PPO}. Policy gradients have a convergence problem which is addressed  by the natural policy gradient (NPG) \cite{NPG}. However, NPG in practice uses a second-order derivative matrix which is hard to scale for large problems, and is computationally unfeasible. PPO on the other hand, instead of imposing a hard constraint, it  formalizes the constraint as a penalty in the "surrogate" objective function \cite{hui}. Hence, PPO may use a first-order optimizer like Gradient Descent (GD) to optimize the objective. Moreover, PPO uses multiple epochs mini-batch updates  instead of performing only one gradient update per data sample like PG methods. Another method which PPO outperforms is the Trust Region Policy Objective, which is very efficient but much more complicated and and not compatible with certain architectures.
 
 
 
@@ -78,18 +78,18 @@ L^{PG}(\theta) =\hat{E_{t}} [\log \pi_{\theta} (a_t|s_t) \times \hat{{A_t}}  ]
 where:
 \begin{itemize}
 \item  $\hat{{E_t}}$ is the expectation which indicates the empirical average over a finite batch of samples.
-\item $\log \pi_{\theta} (a_t|s_t$ is the log probability of taking that action at that state 
+\item $\log \pi_{\theta} (a_t|s_t)$ is the log probability of taking that action at that state 
 \item $\hat{{A_t}}$ is an estimator of the advantage function, if $>0$, then this action is better than the other action possible at that state.
 \end{itemize}
-Through differentiating \ref{eq:1}, we obtain the policy gradient estimator which is then plugged into the Stochastic GD algorithm. Hence, pushing the agent to take actions that lead to higher rewards and avoid bad actions. However, there is a problem arising from the step size as if its too small, then the training process will be too slow. On other hand, if its too high, then there will be too much variability in the training between epochs.
+Through differentiating Equation \ref{eq:1}, we obtain the policy gradient estimator which is then plugged into the Stochastic GD algorithm. Hence, pushing the agent to take actions that lead to higher rewards and avoid bad actions. However, there is a problem arising from the step size as if its too small, then the training process will be too slow. On other hand, if its too high, then there will be too much variability in the training between epochs.
 Whereas PPO improves the stability of the Actor training by limiting the policy update at each training step. This is done through the Clipped Surrogate Function, which constrains the policy change in a desired range.
 
 \subsection{Clipped Surrogate Objective}
-Instead of using $\log \pi$ as in \ref{eq:1} to trace the impacts of actions, the authors introduce the following probability ratio:
+Instead of using $\log \pi$ as in Equation \ref{eq:1} to trace the impacts of actions, the authors introduce the following probability ratio:
 \begin{equation}
 r_t (\theta) =\frac{\pi_{\theta}(a_t|s_t)}{ \pi_{\theta_{old}} (a_t|s_t) }
 \end{equation}
-which define the the probability of action under current policy divided by the probability of the action under previous policy. Hence $r_t(\theta_{old}) = 1$.\newline
+which defines the probability of an action under the current policy divided by the probability of the action under previous policy. Hence $r_t(\theta_{old}) = 1$.\newline
 If $r_t(\theta) > 1$, then action is more probable in the current policy than the old policy. However, if $0 < r_t(\theta) < 1$, then the action is less probable for current policy than for the old one.
 
 The resulting objective function presented in the PPO paper is:
@@ -172,7 +172,7 @@ The base structure of the code, I borrowed from demo's of the  School of AI's Mo
 
 \section{Results}\label{results}
 
-Since I did not have access to a dedicated GPU, I trained the model 3 times for 30 minutes, without reallly changing the hyperparameters. The results seemed constant across three runs, however, the test rewards have been increasing so I took that as a positive. The key problem with training is that the humanoid enviroment a huge observation space (376) and action space (17), resulting in slower training and more network parameters. During the three runs, I tweaked the hyperparameters to see how exactly they effect the training, and concluded that indeed the ones proposed in the paper, are the most efficient. Some key hyperparameters which I used during training were the following:  
+Since I did not have access to a dedicated GPU, I trained the model 3 times for 30 minutes, without really changing the hyperparameters. The results seemed constant across three runs, however, the test rewards have been increasing so I took that as a positive. The key problem with training is that the humanoid enviroment a huge observation space (376) and action space (17), resulting in slower training and more network parameters. During the three runs, I tweaked the hyperparameters to see how exactly they effect the training, and concluded that indeed the ones proposed in the paper, are the most efficient. Some key hyperparameters which I used during training were the following:  
 \begin{lstlisting}[language=Python]
 HIDDEN_SIZE         = 64
 LEARNING_RATE       = 1e-3

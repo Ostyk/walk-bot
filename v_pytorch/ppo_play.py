@@ -1,17 +1,12 @@
 import argparse
 import gym
-#import roboschool
-
-from lib.model import ActorCritic
-
 import numpy as np
 import torch
 import time
+from lib.model import ActorCritic
 
 
 ENV_ID  = "Humanoid-v2"
-
-
 HIDDEN_SIZE = 64
 
 if __name__ == "__main__":
@@ -36,8 +31,9 @@ if __name__ == "__main__":
     #model.load_state_dict(torch.load(args.model))
     model = torch.load(args.model)
 
-
-    for i in range(20):
+    #Training: sampling actions semi-randomly from the prob dist output by the network, so we get exploration
+    # Testing: deterministic not random
+    for i in range(20): #numner of videos
         state = env.reset()
         done = False
         total_steps = 0
@@ -45,10 +41,11 @@ if __name__ == "__main__":
         while not done:
             state = torch.FloatTensor(state).unsqueeze(0).to(device)
             dist, _ = model(state)
+            #continous action space instead of sampling based on the mean and stdf, we use means
+            #deterministic action space we would take the arg max of probaliblies
             action = dist.mean.detach().cpu().numpy()[0] if args.deterministic \
                 else dist.sample().cpu().numpy()[0]
             next_state, reward, done, _ = env.step(action)
-            #env.render(close=False)
             state = next_state
             total_reward += reward
             total_steps += 1

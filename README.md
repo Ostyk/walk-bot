@@ -14,7 +14,7 @@ PPO implementation of Humanoid-v2 from Open-AI gym
 # Repo code structure
 * [Report (PDF) detailing the implemenation and PPO](report/report.pdf)
 
-* [PyTorch implementation](v_torch): taken from Move37 and altered to make project
+* [PyTorch implementation](v_pytorch): taken from Move37 and altered to make project
 
 * [Tensorflow implementation](v_tensorflow): my personal implementation of the above (P.S. very slow, to be improved)
 

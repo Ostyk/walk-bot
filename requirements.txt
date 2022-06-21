@@ -5,7 +5,7 @@ ipykernel==4.8.2
 matplotlib==2.2.0
 mujoco-py==1.50.1.68
 numba==0.37.0
-numpy==1.16.0
+numpy==1.22.0
 pandas==0.22.0
 pipreqs==0.4.9
 scipy==1.0.0
